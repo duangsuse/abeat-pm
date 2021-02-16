@@ -1,4 +1,5 @@
 __pycache__/
-pkged/*.hpp
+pkged/
 gl/
 build/
+*.user

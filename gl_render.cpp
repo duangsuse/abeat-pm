@@ -44,7 +44,7 @@ void Render::render(float dt) {
 
   glBeginTransformFeedback(GL_POINTS);
   glEnable(GL_RASTERIZER_DISCARD);
-  glDrawArrays(GL_POINTS, 0, size);
+  glDrawArrays(GL_POINTS, 0, size); // here
   glDisable(GL_RASTERIZER_DISCARD);
   glEndTransformFeedback();
 
@@ -53,14 +53,14 @@ void Render::render(float dt) {
 
   p_bar.use();
   v_bar[tf_cur].bind();
-  glDrawArrays(GL_POINTS, 0, size);
+  glDrawArrays(GL_POINTS, 0, size); // here
   tf_cur ^= 1;
 
   mgl::VAO::unbind();
 }
 Render::Render(size_t size): size(size), tf_cur(0) {
   data = new float[size];
-  std::fill(data, data + size, 0);
+  std::fill(data, data+size, 0);
 
   {
     mgl::Shader
@@ -70,17 +70,17 @@ Render::Render(size_t size): size(size), tf_cur(0) {
     p_bar.link(vertex_shader, geometry_shader, fragment_shader);
     p_bar.use();
     glUniform1i(p_bar.locate("u_count"), size);
-    glUniform1f(p_bar.locate("u_half"), 1.f / size/* * 0.7*/);
+    glUniform1f(p_bar.locate("u_half"), 1.0f / size/* *0.7 */);
   }
   {
     mgl::Shader shader(shader::VERT_GRAVITY, GL_VERTEX_SHADER);
-    const char *varyings[] = { "o_y", "o_t" };
+    const char *varyings[] = {"o_y", "o_t"};
     glTransformFeedbackVaryings(p_bar_g.id, 2, varyings, GL_INTERLEAVED_ATTRIBS);
     p_bar_g.link(shader);
     p_bar_g.use();
     glUniform1i(p_bar_g.locate("fft_tbo"), 0);
   }
-  for (int i = 0; i < 2; ++i) {
+  for (int i=0; i<2; i++) {
     b_tf[i].bind();
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * size * 2, 0, GL_STREAM_DRAW);
 
@@ -89,7 +89,7 @@ Render::Render(size_t size): size(size), tf_cur(0) {
     glEnableVertexAttribArray(0);
     v_bar[i].unbind();
 
-    v_bar_g[!i].bind();
+    v_bar_g[!i].bind(); // NOTE: !(int)x used
     glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, sizeof(float) * 2, nullptr);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, sizeof(float) * 2, (void*)sizeof(float));
