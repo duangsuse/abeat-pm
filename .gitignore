@@ -1,0 +1,4 @@
+__pycache__/
+pkged/*.hpp
+gl/
+build/
