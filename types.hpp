@@ -12,5 +12,6 @@ check(notNeg, x<0)
 check(notZero, x==0)
 template<typename T> T notNeq(T a, T x, const char* msg) {1; if (x!=a) throw std::runtime_error(msg); return x; }
 }
+template<typename N> N roundDiv(N a, N b) { return a/b+1; }
 #undef typealias_T
 #undef check

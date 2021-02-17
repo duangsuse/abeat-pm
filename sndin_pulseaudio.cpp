@@ -33,7 +33,7 @@ private:
     spnum *buf;
     while (pa_stream_readable_size(stream) > 0) {
       if (pa_stream_peek(stream, (const void **) &buf, &length) < 0) break; // read: peek&drop
-      if (buf) self->buffer->write(buf, length / sizeof(spnum));
+      if (buf!=nullptr) self->buffer->write(buf, length / sizeof(spnum));
       pa_stream_drop(stream);
     }
   }, pa_stream *stream, size_t length)
@@ -52,9 +52,9 @@ private:
   }, pa_stream *stream)
 
   pa_context *context; std::string device;
+  SPtr<Buffer<spnum>> buffer;
   pa_stream *stream;
   pa_threaded_mainloop *mainloop;
-  SPtr<Buffer<spnum>> buffer;
 };
 #ifndef PKGED
 void PAInput::stop() {
@@ -64,7 +64,7 @@ void PAInput::stop() {
   pa_stream_unref(stream);
   stream = nullptr;
 }
-void PAInput::start() { // key
+void PAInput::start() { // key entrance
   PALock lock(mainloop);
 #define fails(verb) ("Failed to " verb " PA stream")
   pa_sample_spec sample_spec = { .format = PA_SAMPLE_S16LE, .rate = config::freq_sample, .channels = config::channels };
@@ -78,7 +78,9 @@ void PAInput::start() { // key
   };
   pa_stream_set_state_callback(stream, stream_state_callback, this); // order: steam state/read, context state/info
   pa_stream_set_read_callback(stream, stream_read_callback, this);
-  notNeg(pa_stream_connect_record(stream, device.data(), &buffer_attr, PA_STREAM_ADJUST_LATENCY), fails("connect")); // TODO custom device string
+  notNeg(
+    pa_stream_connect_record(stream, device.data(), &buffer_attr, PA_STREAM_ADJUST_LATENCY),
+    fails("connect")); // TODO custom device string
   pa_threaded_mainloop_wait(mainloop);
   notNeq(PA_STREAM_READY, pa_stream_get_state(stream), "PA stream is not ready");
 }
@@ -87,25 +89,27 @@ void PAInput::start() { // key
 PAInput::PAInput(SPtr<Buffer<spnum>> buffer): buffer(std::move(buffer)) {
   notZero((mainloop = pa_threaded_mainloop_new()), fails("create"));
   PALock lock(mainloop);
-  context = pa_context_new(pa_threaded_mainloop_get_api(mainloop), "abeat");
-  if (context == nullptr) {
-      lock.unlock();
-      pa_threaded_mainloop_free(mainloop);
-      throw std::runtime_error(fails("create"));
-  }
-  auto destroy = [&]() {
-      pa_context_disconnect(context);
-      pa_context_unref(context);
-      lock.unlock();
-      pa_threaded_mainloop_free(mainloop);
+  context = pa_context_new(pa_threaded_mainloop_get_api(mainloop), "abeat"); // key entrance
+  auto freeLoop = [&]() {
+    lock.unlock();
+    pa_threaded_mainloop_free(mainloop);
   };
+  if (context==nullptr) { freeLoop(); throw std::runtime_error(fails("create")); }
   pa_context_set_state_callback(context, context_state_callback, this);
   try {
-    notNeg(pa_context_connect(context, nullptr, PA_CONTEXT_NOFLAGS, nullptr), fails("connect"));
-    notNeg(pa_threaded_mainloop_start(mainloop), fails("connect"));
+    notNeg(
+      pa_context_connect(context, nullptr, PA_CONTEXT_NOFLAGS, nullptr),
+      fails("connect"));
+    notNeg(pa_threaded_mainloop_start(mainloop), fails("connect")); // first start
     pa_threaded_mainloop_wait(mainloop);
     notNeq(PA_CONTEXT_READY, pa_context_get_state(context), "PA context no ready");
-  }  catch (std::runtime_error ex) { pa_threaded_mainloop_stop(mainloop); destroy(); throw std::move(ex); }
+  }  catch (std::runtime_error ex) {
+    pa_threaded_mainloop_stop(mainloop);
+    pa_context_disconnect(context);
+    pa_context_unref(context);
+    freeLoop();
+    throw std::move(ex);
+  }
 
   pa_operation *operation = pa_context_get_server_info(context, context_info_callback, this); // query info
   while (pa_operation_get_state(operation) != PA_OPERATION_DONE) pa_threaded_mainloop_wait(mainloop);

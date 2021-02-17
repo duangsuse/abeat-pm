@@ -9,9 +9,12 @@ const uint32_t
     freq_sample = 44100
     , latency = 1100
     , max_fps = 60
-    , duration = 50
-    , O = 50;
-const uint64_t buffer_size = freq_sample * duration / SEC_MS;
+    , buf_duration = 50
+    , O = 500
+    , kLo = 10, kHi = 70;
+const uint64_t
+    buffer_size = freq_sample * buf_duration / SEC_MS
+    , window_size = 4096;
 const uint8_t channels = 1; // support stereo?
 
 } // namespace abeat::config

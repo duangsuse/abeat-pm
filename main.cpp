@@ -29,7 +29,7 @@ int main() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // NOTE core?
   glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, 1);
-  GLFWwindow *window = glfwCreateWindow(1000, 350, "abeat", nullptr, nullptr);
+  GLFWwindow *window = glfwCreateWindow(1000, 350, "abeat", nullptr, nullptr); // initial winsize
   if (!window) {
     std::cerr << "Failed to open GLFW window" << std::endl;
     glfwTerminate();
@@ -50,7 +50,7 @@ int main() {
     Render render(config::O);
     time_point<steady_clock> cur_time, last_time;
     running = true;
-    std::thread fps_printer([]() { // cli rate sleep 1s
+    std::thread fps_printer([]() { // CLI: rate sleep 1s
       while (({ std::unique_lock<std::mutex> lock(mutex); !cv.wait_for(lock, 1s, []() { return !running; }); })) {
           const int cnt = frame_counter;
           frame_counter = 0;
@@ -58,16 +58,16 @@ int main() {
         }
     });
     auto buffer = std::make_shared<Buffer<int16_t>>(config::buffer_size); // sample buffer
-    FFT fft(4096); PAInput input(buffer);
+    FFT fft(config::window_size); PAInput input(buffer);
     input.start();
-    const size_t scale = std::min(fft.get_size(), buffer->get_size());
-    while (!glfwWindowShouldClose(window)) { // framerate limit dt loop
+    const size_t scale = std::min(fft.get_size(), buffer->get_size()); // size given in ctor
+    while (!glfwWindowShouldClose(window)) { // main: framerate limit dt loop
       cur_time = steady_clock::now();
       std::chrono::duration<float> dt = (cur_time - last_time);
       fft.calculate(*buffer);
       for (size_t i = 0; i < config::O; ++i) {
-        const float lo = 10, hi = 70;
-        const float dB = (std::clamp(20 * std::log10(length(fft.output[i]) / scale), lo, hi) - lo) / (hi - lo); // key
+        const float lo = config::kLo, hi = config::kHi;
+        const float dB = (std::clamp(20 * std::log10(length(fft.output[i]) / scale), lo, hi) - lo) / (hi - lo); // key equation
         render.data[i] = dB;
       }
       render.render(dt.count());
@@ -80,7 +80,7 @@ int main() {
     {
       std::unique_lock<std::mutex> lock(mutex);
       running = false;
-      cv.notify_one();
+      cv.notify_one(); // sync unused
     }
     fps_printer.join();
   } // using chrono

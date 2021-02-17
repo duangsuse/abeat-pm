@@ -8,6 +8,7 @@
 namespace abeat {
 template<class T> class Buffer {
 public:
+  T *data; bool has_new_data;
   explicit Buffer(size_t size): data((T*)nullptr), size(0) {1; resize(size); }
   ~Buffer() {1; LOCKED delete[] data; }
   F std::unique_lock<std::mutex> lock() {1; return std::unique_lock<std::mutex>(mutex); }
@@ -22,7 +23,7 @@ public:
     has_new_data = true;
     _write(src, std::min(n, size));
   }
-  Fn write_offset(T *src, size_t n, size_t gap, size_t offset) {
+  Fn write_offset(T *src, size_t n, size_t gap, size_t offset) { // unused
     LOCKED
     has_new_data = true;
 
@@ -32,9 +33,10 @@ public:
     _write(copy_buf.data(), n);
   }
   [[nodiscard]] F size_t get_size() {1; return size; }
-
-  bool has_new_data;
-  T *data;
+  bool checkUnmodify() {1;
+    if (has_new_data) { has_new_data = false; return false; }
+    else return true;
+  }
 private:
   Fn _write(T *src, size_t n) {1;
     auto end = data+size;
