@@ -1,7 +1,7 @@
-#ifndef PKGED
-#  include "gl_my.hpp"
-#else
+#ifdef PKGED
 #  include "pkged/gl_my.hpp"
+#else
+#  include "gl_my.hpp"
 #endif
 #include "gl_sharders.hpp"
 
@@ -74,11 +74,11 @@ Render::Render(size_t size): size(size), tf_cur(0) {
   }
   {
     mgl::Shader shader(shader::VERT_GRAVITY, GL_VERTEX_SHADER);
-    const char *varyings[] = {"o_y", "o_t"};
+    const char *varyings[] = {"y_out", "t_out"};
     glTransformFeedbackVaryings(p_bar_g.id, 2, varyings, GL_INTERLEAVED_ATTRIBS);
     p_bar_g.link(shader);
     p_bar_g.use();
-    glUniform1i(p_bar_g.locate("fft_tbo"), 0);
+    glUniform1i(p_bar_g.locate("fft_buf"), 0);
   }
   for (int i=0; i<2; i++) {
     b_tf[i].bind();

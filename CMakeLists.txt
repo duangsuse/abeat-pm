@@ -19,7 +19,7 @@ include_directories(
 
 set(PULSE_LIBS ${PULSE_LIBS} "pulse")
 set(SHARED_SRC buffer.cpp FFT.cpp sndin_pulseaudio.cpp gl_render.cpp)
-set(SHARED_INLINE gl_my.hpp)
+set(SHARED_INLINE types.hpp gl_my.hpp)
 set(S ${CMAKE_CURRENT_SOURCE_DIR}/)
 
 add_custom_command(OUTPUT ${S}pkged/FFT.h

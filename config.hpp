@@ -1,14 +1,23 @@
 #pragma once
 #include <cstdint>
 
-namespace abeat::config {
+namespace abeat {
+const int SEC_MS = 1000;
+namespace config {
 
 const uint32_t
     freq_sample = 44100
     , latency = 1100
     , max_fps = 60
-    , duration = 50;
-const uint64_t buffer_size = freq_sample * duration / 1000;
-const bool stereo = false;
+    , duration = 50
+    , O = 50;
+const uint64_t buffer_size = freq_sample * duration / SEC_MS;
+const uint8_t channels = 1; // support stereo?
 
 } // namespace abeat::config
+} // namespace abeat
+#define DEFINE_LOCK(id, type) struct id##Lock { \
+	explicit id##Lock(type *inst): o(inst) { type##_lock(inst); } \
+	inline ~id##Lock() { if (o) type##_unlock(o); } \
+	inline void unlock() { if (o) { type##_unlock(o); o = nullptr; } } \
+private: type *o; };

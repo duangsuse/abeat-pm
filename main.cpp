@@ -15,7 +15,6 @@ std::atomic<int> frame_counter(0);
 std::condition_variable cv; // at frame sync
 std::mutex mutex; // used before fps_printer loop
 bool running;
-const int SEC_MS = 1000;
 
 inline float length(const fftwf_complex &cpl) {
   return std::hypot(cpl[0], cpl[1]);
@@ -28,7 +27,7 @@ int main() {
   // glfwWindowHint(GLFW_DECORATED, false);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // NOTE core?
   glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, 1);
   GLFWwindow *window = glfwCreateWindow(1000, 350, "abeat", nullptr, nullptr);
   if (!window) {
@@ -48,8 +47,7 @@ int main() {
     using namespace std::chrono;
     using namespace abeat;
 
-    const int O = 500;
-    Render render(O);
+    Render render(config::O);
     time_point<steady_clock> cur_time, last_time;
     running = true;
     std::thread fps_printer([]() { // cli rate sleep 1s
@@ -67,7 +65,7 @@ int main() {
       cur_time = steady_clock::now();
       std::chrono::duration<float> dt = (cur_time - last_time);
       fft.calculate(*buffer);
-      for (size_t i = 0; i < O; ++i) {
+      for (size_t i = 0; i < config::O; ++i) {
         const float lo = 10, hi = 70;
         const float dB = (std::clamp(20 * std::log10(length(fft.output[i]) / scale), lo, hi) - lo) / (hi - lo); // key
         render.data[i] = dB;
