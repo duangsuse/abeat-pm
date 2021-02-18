@@ -1,6 +1,10 @@
 #include "pkged/types.hpp"
-#include "config.hpp"
 #include "pkged/buffer.hpp"
+#define DEFINE_LOCK(id, type) struct id##Lock { \
+	explicit id##Lock(type *inst): o(inst) { type##_lock(inst); } \
+	inline ~id##Lock() { if (o) type##_unlock(o); } \
+	inline void unlock() { if (o) { type##_unlock(o); o = nullptr; } } \
+private: type *o; };
 
 #include <pulse/pulseaudio.h>
 namespace abeat {
@@ -19,14 +23,14 @@ public:
     pa_threaded_mainloop_free(mainloop);
   }
 
+  pa_sample_spec *spec;
   void stop(); void start();
 private:
   void kill() { pa_threaded_mainloop_signal(this->mainloop, 0); }
 #define PA_CALLBACK(name, op, ...) static void name##_callback(__VA_ARGS__, void *userdata) \
   { auto *self = (PAInput*)userdata; op }
   PA_CALLBACK(context_info, {
-    self->device = info->default_sink_name;
-    self->device += ".monitor";
+    self->device = info->default_sink_name; self->device += ".monitor";
     self->kill();
   }, pa_context *context, const pa_server_info *info)
   PA_CALLBACK(stream_read, {
@@ -67,14 +71,13 @@ void PAInput::stop() {
 void PAInput::start() { // key entrance
   PALock lock(mainloop);
 #define fails(verb) ("Failed to " verb " PA stream")
-  pa_sample_spec sample_spec = { .format = PA_SAMPLE_S16LE, .rate = config::freq_sample, .channels = config::channels };
-  stream = notZero(pa_stream_new(context, "abeat input", &sample_spec, nullptr), fails("create"));
+  stream = notZero(pa_stream_new(context, "abeat input", spec, nullptr), fails("create"));
   pa_buffer_attr buffer_attr = {
       (uint32_t) -1,
       (uint32_t) -1,
       (uint32_t) -1,
       (uint32_t) -1,
-      (uint32_t) config::freq_sample,
+      (uint32_t) spec->rate,
   };
   pa_stream_set_state_callback(stream, stream_state_callback, this); // order: steam state/read, context state/info
   pa_stream_set_read_callback(stream, stream_read_callback, this);

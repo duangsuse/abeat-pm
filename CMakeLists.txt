@@ -20,6 +20,7 @@ include_directories(
 set(PULSE_LIBS ${PULSE_LIBS} "pulse")
 set(SHARED_SRC buffer.cpp FFT.cpp sndin_pulseaudio.cpp gl_render.cpp)
 set(SHARED_INLINE types.hpp gl_my.hpp)
+set(SHADER_SRC res/bar.shader res/barg.shader)
 set(S ${CMAKE_CURRENT_SOURCE_DIR}/)
 
 add_custom_command(OUTPUT ${S}pkged/FFT.h
@@ -29,10 +30,14 @@ add_custom_command(OUTPUT ${S}gl/src/glad.c
 	PRE_BUILD COMMAND cp ${S}gl.xml.gz . &&gzip -d -fk gl.xml.gz
 	&&python -m glad --generator=c --profile=compatibility --spec=gl --reproducible --api="gl=4.0" --out-path ${S}gl
 	DEPENDS gl.xml.gz)
+add_custom_command(OUTPUT ${S}pkged/gl_shaders.hpp
+	PRE_BUILD COMMAND cd ${S}&&mkdir -p pkged &&python mk_glsl_hpp.py ${SHADER_SRC} >pkged/gl_shaders.hpp
+	DEPENDS ${SHADER_SRC}
+)
 
 add_executable(abeat
 	main.cpp ${SHARED_SRC}
-	pkged/FFT.h ${S}gl/src/glad.c)
+    pkged/FFT.h pkged/gl_shaders.hpp ${S}gl/src/glad.c)
 
 target_link_libraries(abeat
 	${CMAKE_THREAD_LIBS_INIT}

@@ -91,20 +91,20 @@ struct Program { GLuint id;
   inline void use() const { glUseProgram(id); }
 #undef OBJ
   void loadShaders(std::ifstream& file) {
-    std::string prefix;
+    std::string headDef;
     std::string* codes[3] = {nullptr}; // vert,geom,frag
     std::string line;
     auto addTo = [&line](std::string& s) { s.append(line); s.push_back('\n'); };
     while (!file.eof()) {
       std::getline(file, line);
-      if (line.find("// ") == std::string::npos) { addTo(prefix); }
+      if (line.find("// ") == std::string::npos) { addTo(headDef); }
       else {
         auto name = line.substr(3);
         int i = (name=="vert")? 0 :(name=="geom")? 1 :(name=="frag")? 2 :-1;
-        if (i==-1) { addTo(prefix); continue; }
+        if (i==-1) { addTo(headDef); continue; }
         if (codes[i] != nullptr) { line+=" duplicate"; throw std::invalid_argument(line); }
         else {
-          codes[i] = new std::string(prefix);
+          codes[i] = new std::string(headDef);
           while (!file.eof()) {
             std::getline(file, line); if (*line.begin() == '\x03') break;
             addTo(*codes[i]);

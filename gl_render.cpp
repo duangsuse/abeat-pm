@@ -83,7 +83,7 @@ Render::Render(size_t size): size(size), i_flipy(0) {
     std::ifstream bargGlsl("res/barg.shader");
     if(bargGlsl.is_open()) p_bar_g.loadShaders(bargGlsl);
     else {
-      mgl::Shader shader(shader::VERT_GRAVITY, GL_VERTEX_SHADER);
+      mgl::Shader shader(shader::VERT_BARG, GL_VERTEX_SHADER);
       p_bar_g.link(shader);
     }
     p_bar_g.use();

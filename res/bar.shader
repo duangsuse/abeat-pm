@@ -14,7 +14,7 @@ void main() {
 out vec4 color_out;
 
 void main() {
-    float alpha = 0.5;
+	float alpha = 0.5;
 	color_out = vec4(0.01171875*alpha, 0.66015625*alpha, 0.953125*alpha, alpha);
 }
 

@@ -30,13 +30,15 @@ pacman -S fftw glfw-x11
 + [sharder code](gl_sharders.hpp): a RK4 interpolation "gravity", bars vert/frag/geom
 + [main dt deltaTime loop](main.cpp)
 
-Used tool: [mkhpp.py](mkhpp.py)
+Used tool: [mkhpp.py](mkhpp.py), [mk_glsl_hpp.py](mk_glsl_hpp.py)
 
 ## Technical
 
 This program uses various C++17 feature like `std::chrono`, `constexpr`.
 
 `mkhpp` tool enables decl/defn reuse by outputting `{}`-removed `pkged/x.hpp` preprocessed with `cpp -DPKGED`, unless inlined members with `{1;` prefix
+
+[Setting config params](config.hpp) __is supported__, but it looks very hard to support bg color customization(`vec4`), or migerate to WebAssembly（FFT，WebAudio)?
 
 Main dataflow:
 

@@ -29,4 +29,3 @@ void main() {
 	y_out = max(yg, y);
 	t_out = mix(t+u_dt, 0., gt_y);
 }
-
